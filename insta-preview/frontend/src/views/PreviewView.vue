@@ -46,7 +46,12 @@
 
       <!-- Upload -->
       <div class="sidebar-section">
-        <div class="section-label">Photos ({{ store.photos.length }})</div>
+        <div class="section-label-row">
+          <span class="section-label">Photos ({{ store.photos.length }})</span>
+          <button v-if="store.photos.length > 0" class="btn-clear-all" @click="clearAll">
+            Clear all
+          </button>
+        </div>
         <div class="upload-zone"
              :class="{ dragging }"
              @dragover.prevent="dragging = true"
@@ -101,12 +106,17 @@
         </div>
       </div>
 
-      <div class="device-stage">
+      <div class="device-stage"
+           :class="{ 'stage-dragging': stageDragging }"
+           @dragover.prevent="stageDragging = true"
+           @dragleave="stageDragging = false"
+           @drop.prevent="onStageDrop">
         <DeviceFrame :device="store.selectedDevice">
           <InstaProfile
             :session="store.currentSession"
             :photos="store.sortedPhotos"
             :layout="currentLayout"
+            @upload-click="triggerUpload"
           />
         </DeviceFrame>
       </div>
@@ -127,6 +137,7 @@ const route = useRoute()
 const fileInput = ref(null)
 const sortableEl = ref(null)
 const dragging = ref(false)
+const stageDragging = ref(false)
 const sidebarOpen = ref(true)
 const currentLayout = ref('grid3')
 
@@ -193,6 +204,21 @@ async function onDrop(e) {
   }
 }
 
+async function onStageDrop(e) {
+  stageDragging.value = false
+  const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'))
+  if (files.length) {
+    await store.uploadPhotos(route.params.sessionId, files)
+    await nextTick()
+    initSortable()
+  }
+}
+
+async function clearAll() {
+  if (!confirm('Remove all photos from this session?')) return
+  await store.clearAllPhotos(route.params.sessionId)
+}
+
 function saveToHistory() {
   // Sessions are already persisted; just give feedback
   const toast = document.createElement('div')
@@ -226,10 +252,20 @@ function saveToHistory() {
 .sidebar-close { color: var(--text-muted); font-size: 16px; padding: 4px; }
 
 .sidebar-section { margin-bottom: 20px; }
+.section-label-row {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 10px;
+}
 .section-label {
   font-size: 10px; font-weight: 700; letter-spacing: 0.1em;
-  text-transform: uppercase; color: var(--text-dim); margin-bottom: 10px;
+  text-transform: uppercase; color: var(--text-dim);
 }
+.btn-clear-all {
+  font-size: 10px; font-weight: 600; color: var(--red, #f87171);
+  background: none; border: none; cursor: pointer; padding: 2px 4px;
+  opacity: 0.7; transition: opacity var(--transition);
+}
+.btn-clear-all:hover { opacity: 1; }
 
 .session-badge {
   display: flex; align-items: center; gap: 8px;
@@ -282,7 +318,7 @@ function saveToHistory() {
 @keyframes fill { 0%{width:0%} 50%{width:80%} 100%{width:100%} }
 
 /* Photos list */
-.photos-list { display: flex; flex-direction: column; gap: 6px; }
+.photos-list { display: flex; flex-direction: column; gap: 6px; max-height: 340px; overflow-y: auto; padding-right: 4px; }
 .photo-item {
   display: flex; align-items: center; gap: 8px;
   background: var(--bg3); border: 1px solid var(--border);
@@ -321,6 +357,12 @@ function saveToHistory() {
   padding: 40px 24px;
   background: radial-gradient(ellipse at center, #1a1a1a 0%, #0a0a0a 70%);
   min-height: 600px;
+  transition: background 0.2s;
+}
+.device-stage.stage-dragging {
+  background: radial-gradient(ellipse at center, #1e2a1e 0%, #0a130a 70%);
+  outline: 2px dashed var(--accent);
+  outline-offset: -8px;
 }
 
 /* Responsive */

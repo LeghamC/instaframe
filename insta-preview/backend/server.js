@@ -86,6 +86,19 @@ app.put('/api/photos/reorder', (req, res) => {
   res.json({ success: true });
 });
 
+// Delete all photos for a session
+app.delete('/api/photos/session/:sessionId', (req, res) => {
+  const db = readDB()
+  const toDelete = db.photos.filter(p => p.sessionId === req.params.sessionId)
+  toDelete.forEach(photo => {
+    const filepath = path.join(uploadsDir, photo.filename)
+    if (fs.existsSync(filepath)) fs.unlinkSync(filepath)
+  })
+  db.photos = db.photos.filter(p => p.sessionId !== req.params.sessionId)
+  writeDB(db)
+  res.json({ success: true })
+})
+
 // Delete photo
 app.delete('/api/photos/:id', (req, res) => {
   const db = readDB();

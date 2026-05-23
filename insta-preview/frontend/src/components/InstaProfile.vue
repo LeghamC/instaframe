@@ -109,7 +109,12 @@
         </div>
       </div>
       <!-- Empty placeholders -->
-      <div v-for="n in emptySlots" :key="`empty-${n}`" class="grid-item grid-item-empty"></div>
+      <div v-for="n in emptySlots" :key="`empty-${n}`" class="grid-item grid-item-empty"
+           @click="emit('upload-click')">
+        <svg class="empty-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="22" height="22">
+          <path d="M12 5v14M5 12h14"/>
+        </svg>
+      </div>
     </div>
 
     <!-- Bottom nav -->
@@ -147,6 +152,8 @@
 <script setup>
 import { computed, ref, onMounted, onUnmounted } from 'vue'
 
+const emit = defineEmits(['upload-click'])
+
 const props = defineProps({
   session: Object,
   photos: { type: Array, default: () => [] },
@@ -157,8 +164,10 @@ const sortedPhotos = computed(() => [...props.photos].sort((a, b) => a.position 
 
 const emptySlots = computed(() => {
   const count = sortedPhotos.value.length
-  const row = count % 3
-  return row === 0 ? 0 : 3 - row
+  const remainder = count % 3
+  const fillRow = remainder === 0 ? 0 : 3 - remainder
+  const total = count + fillRow
+  return total < 24 ? 24 - count : fillRow
 })
 
 const currentTime = ref('')
@@ -395,7 +404,7 @@ onUnmounted(() => clearInterval(timer))
 
 .grid-item {
   position: relative;
-  aspect-ratio: 1;
+  aspect-ratio: 3 / 4;
   overflow: hidden;
   background: #111;
 }
@@ -445,6 +454,17 @@ onUnmounted(() => clearInterval(timer))
 /* Empty placeholders */
 .grid-item-empty {
   background: #111;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.empty-plus {
+  color: #333;
+  transition: color 0.2s;
+}
+.grid-item-empty:hover .empty-plus {
+  color: #666;
 }
 
 /* Bottom nav */

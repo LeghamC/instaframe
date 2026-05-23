@@ -67,6 +67,11 @@ export const useAppStore = defineStore('app', {
       this.photos = this.photos.filter(p => p.id !== id)
     },
 
+    async clearAllPhotos(sessionId) {
+      await axios.delete(`${API}/photos/session/${sessionId}`)
+      this.photos = []
+    },
+
     async reorderPhotos(sessionId, orderedIds) {
       await axios.put(`${API}/photos/reorder`, { sessionId, orderedIds })
       orderedIds.forEach((id, idx) => {
